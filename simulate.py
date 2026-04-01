@@ -14,7 +14,7 @@ SCHEDULE = [
     (5, 10), (20, 30), (40, 55), (65, 85), (95, 120), (130, 160)
 ]
 
-COOLDOWN = 600  # seconds to simulate after last period
+COOLDOWN = 40  # seconds to simulate after last period
 
 
 def build_Q_signal(t, schedule, Q):

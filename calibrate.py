@@ -192,7 +192,7 @@ def fit_all(benchmarks, schedules, T_amb):
 
 
 # --- Run calibration ---
-T_amb = 34        # <-- replace with your measured ambient temperature
+T_amb = 30        # <-- replace with your measured ambient temperature
 alpha = 5         # <-- replace with f_high*V_high^2 / (f_low*V_low^2) from OPP table
 # 6.59 or 3.42
 
@@ -202,6 +202,7 @@ steady_state_high   = bench_dir + "1800mhz-steady-state.csv"
 cooling_tail        = bench_dir + "1800mhz-long-cool.csv"
 short_pulse         = bench_dir + "1800mhz-pulse-rise.csv"
 multi_pulse         = bench_dir + "1800mhz-multi-pulse.csv"
+multi_pulse_short   = bench_dir + "1800mhz-multi-pulse-200s.csv"
 rise_fall           = bench_dir + "1800mhz-sustained.csv"
 
 # Q_low, Q_high, R_total = fit_steady_state(steady_state_low, steady_state_high, alpha, T_amb)
@@ -211,7 +212,7 @@ rise_fall           = bench_dir + "1800mhz-sustained.csv"
 
 benchmarks_to_fit = [rise_fall]
 schedules = [[(5, 3605)]]
-benchmarks_to_fit = [multi_pulse]
+benchmarks_to_fit = [multi_pulse_short]
 schedules = [[
     (5, 10), (20, 30), (40, 55), (65, 85), (95, 120), (130, 160)
 ]]

@@ -83,25 +83,25 @@ pulse_for_length 5
 
 sleep 10
 
-pulse_for_length 10
+pulse_for_length 5
 
 sleep 10
 
-pulse_for_length 15
+pulse_for_length 5
 
 sleep 10
 
-pulse_for_length 20
+pulse_for_length 5
 
 sleep 10
 
-pulse_for_length 25
+pulse_for_length 5
 
 sleep 10
 
-pulse_for_length 30
+pulse_for_length 5
 
-sleep 600
+sleep 60
 
 echo "Killing temp monitor..."
 
