@@ -81,23 +81,23 @@ sleep 5
 
 pulse_for_length 5
 
-sleep 10
+#sleep 10
 
 pulse_for_length 5
 
-sleep 10
+#sleep 10
 
 pulse_for_length 5
 
-sleep 10
+#sleep 10
 
 pulse_for_length 5
 
-sleep 10
+#sleep 10
 
 pulse_for_length 5
 
-sleep 10
+#sleep 10
 
 pulse_for_length 5
 
