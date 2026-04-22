@@ -111,7 +111,7 @@ def fit_beta(benchmark_data, Q, R_total, tau1, tau2, T_amb, p0=0.3):
     return beta
 
 
-def simulate2(schedule, Q, R_total, tau1, tau2, beta, T_amb, sim_length, dt=1):
+def simulate2(schedule, Q, Q_base, R_coupling, R_amb, tau1, tau2, T_amb, sim_length, dt=1):
 
     def build_Q_signal(t, schedule, Q):
         for t0, t1 in schedule:
@@ -128,19 +128,19 @@ def simulate2(schedule, Q, R_total, tau1, tau2, beta, T_amb, sim_length, dt=1):
         np.arange(t0, t1, dt) for t0, t1 in zip(breakpoints, breakpoints[1:])
     ] + [np.array(breakpoints)]))
 
-    R12 = beta * R_total
-    R3  = (1 - beta) * R_total
-    C1  = tau1 / R12
-    C2  = tau2 / R3
+    C1  = tau1 / R_coupling
+    C2  = tau2 / R_amb
 
     def odes(t, y):
         T_cpu, T_sink = y
-        q = build_Q_signal(t, schedule, Q)
-        dTcpu  = (q - (T_cpu - T_sink) / R12) / C1
-        dTsink = ((T_cpu - T_sink) / R12 - (T_sink - T_amb) / R3) / C2
+        q = build_Q_signal(t, schedule, Q) + Q_base
+        dTcpu  = (q - (T_cpu - T_sink) / R_coupling) / C1
+        dTsink = ((T_cpu - T_sink) / R_coupling - (T_sink - T_amb) / R_amb) / C2
         return [dTcpu, dTsink]
 
-    sol = solve_ivp(odes, (0, sim_length), [T_amb, T_amb],
+    T_init = 30
+    T_heatsink = 26
+    sol = solve_ivp(odes, (0, sim_length), [T_init, T_heatsink],
                     t_eval=t_eval, method="RK45",
                     max_step=dt)
 
@@ -154,17 +154,17 @@ def fit_all(benchmarks, schedules, T_amb):
         df["timestamp_s"] = (df["timestamp_ms"].values - df["timestamp_ms"].iloc[0]) / 1000.0
 
     def residuals(params):
-        Q, R, tau1, tau2, beta = params
+        Q, Q_base, R_coupling, R_amb, tau1, tau2 = params
 
         print(f"=== Optimization Parameters ===")
-        print(f"Q={Q:.3f}W, R={R:.3f}C/W, tau1={tau1:.3f}s, tau2={tau2:.3f}s, beta={beta:.3f}")
+        print(f"Q={Q:.3f}W, Q_base={Q_base:.3f}W, R_coupling={R_coupling:.3f}C/W, R_amb={R_amb:.3f}W, tau1={tau1:.3f}s, tau2={tau2:.3f}s")
         error = 0
         
         for df, schedule in zip(dfs, schedules):
             T  = df["temp_celsius"].values
             t  = df["timestamp_s"].values
             sim_length = int(df["timestamp_s"].iloc[-1])
-            T_x, T_pred, _ = simulate2(schedule, Q, R, tau1, tau2, beta, T_amb, sim_length)
+            T_x, T_pred, _ = simulate2(schedule, Q, Q_base, R_coupling, R_amb, tau1, tau2, T_amb, sim_length)
             x = np.linspace(0, sim_length, num=len(df["timestamp_s"]), endpoint=True)
             T_pred_interp = np.interp(x, T_x, T_pred)
 
@@ -172,27 +172,28 @@ def fit_all(benchmarks, schedules, T_amb):
 
         print(f"Error:{error}")
         return error
-
-    x0 = np.array([50, 1, 10, 100, 0.3])
+    
+    x0 = np.array([7.8, 3, 1.196, 1.46, 0.9, 29.5])
     bounds = [
-        (0.01, 100),       # Q
-        (0.01, 100),       # R
-        (0.001, 1000),     # tau1
-        (0.01, 10000),     # tau2
-        (0.01, 0.99),      # beta
+        (0.01, 20),        # Q
+        (0.01, 10),        # Q_base
+        (0.01, 5),         # R_coupling
+        (0.01, 5),         # R_amb
+        (0.01, 10),        # tau1
+        (5, 100),        # tau2
     ]
 
     results = minimize(residuals, x0=x0, bounds=bounds, method='trust-constr')
 
     print(results)
     
-    Q, R, tau1, tau2, beta = results.x
+    Q, Q_base, R_coupling, R_amb, tau1, tau2 = results.x
 
-    return Q, R, tau1, tau2, beta
+    return Q, Q_base, R_coupling, R_amb, tau1, tau2
 
 
 # --- Run calibration ---
-T_amb = 30        # <-- replace with your measured ambient temperature
+T_amb = 22        # <-- replace with your measured ambient temperature
 alpha = 5         # <-- replace with f_high*V_high^2 / (f_low*V_low^2) from OPP table
 # 6.59 or 3.42
 
@@ -216,7 +217,7 @@ benchmarks_to_fit = [multi_pulse_short]
 schedules = [[
     (5, 10), (20, 30), (40, 55), (65, 85), (95, 120), (130, 160)
 ]]
-Q, R, tau1, tau2, beta = fit_all(benchmarks_to_fit, schedules, T_amb)
+Q, Q_base, R_coupling, R_amb, tau1, tau2 = fit_all(benchmarks_to_fit, schedules, T_amb)
 
 print("\nCalibration complete.")
-print(f"  Q={Q:.3f}, R={R:.3f} C/W, tau1={tau1:.3f} s, tau2={tau2:.3f} s, beta={beta:.3f}")
+print(f"  Q={Q:.3f}, Q_base={Q_base:.3f}, R_coupling={R_coupling:.3f} C/W, R_amb={R_amb:.3f} C/W, tau1={tau1:.3f} s, tau2={tau2:.3f} s")
