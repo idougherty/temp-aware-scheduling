@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import numpy as np
 import pandas as pd
-from scipy.optimize import curve_fit, minimize
+from scipy.optimize import curve_fit, minimize, differential_evolution, dual_annealing
 from scipy.integrate import solve_ivp
 
 
@@ -88,7 +88,7 @@ def simulate(t_eval, T_cpu0, T_sink0, Q, R_total, tau1, tau2, beta, T_amb):
         dTsink = ((T_cpu - T_sink) / R12 - (T_sink - T_amb) / R3) / C2
         return [dTcpu, dTsink]
 
-    sol = solve_ivp(odes, (t_eval[0], t_eval[-1]), [T_cpu0, T_sink0], t_eval=t_eval, method="RK45")
+    sol = solve_ivp(odes, (t_eval[0], t_eval[-1]), [T_cpu0, T_sink0], t_eval=t_eval)
     return sol.y[0]
 
 
@@ -139,7 +139,7 @@ def simulate2(schedule, Q, Q_base, R_coupling, R_amb, tau1, tau2, T_amb, sim_len
         return [dTcpu, dTsink]
 
     T_init = 30
-    T_heatsink = 26
+    T_heatsink = 27
     sol = solve_ivp(odes, (0, sim_length), [T_init, T_heatsink],
                     t_eval=t_eval, method="RK45",
                     max_step=dt)
@@ -183,7 +183,7 @@ def fit_all(benchmarks, schedules, T_amb):
         (5, 100),        # tau2
     ]
 
-    results = minimize(residuals, x0=x0, bounds=bounds, method='trust-constr')
+    results = dual_annealing(residuals, x0=x0, bounds=bounds)
 
     print(results)
     

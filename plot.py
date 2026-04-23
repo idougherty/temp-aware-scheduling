@@ -64,7 +64,7 @@ height_ratios += [1] * n_extra       # frequency panels
 
 fig, axes = plt.subplots(
     n_rows, 1,
-    figsize=(5, 5),
+    figsize=(10, 5),
     gridspec_kw={"height_ratios": height_ratios},
     sharex=True,
 )
@@ -144,9 +144,9 @@ for idx, (name, df) in enumerate(zip(names, dfs)):
     else:
         temp_plot.plot(df["x"], df["temp_celsius"], label=name)
 
-    mean_temp = df["temp_celsius"].mean()
-    plt.axhline(mean_temp, color="orange", linestyle='--', label=f"mean-temp={mean_temp:0.1f}°C")
-    print(f"{name} avg temp: {mean_temp}C")
+#    mean_temp = df["temp_celsius"].mean()
+#    plt.axhline(mean_temp, color="orange", linestyle='--', label=f"mean-temp={mean_temp:0.1f}°C")
+#    print(f"{name} avg temp: {mean_temp}C")
 
 # Frequency subplots 
 for idx, (name, df) in enumerate(zip(hz_names, hz_dfs)):
@@ -158,13 +158,13 @@ for idx, (name, df) in enumerate(zip(hz_names, hz_dfs)):
     
 temp_plot.set_ylabel("Temperature (°C)")
 temp_plot.set_xlabel("Time (s)")
-temp_plot.set_ylim(55, 73)
+#temp_plot.set_ylim(55, 73)
 temp_plot.grid(linestyle="--", alpha=0.4)
 temp_plot.spines[["top", "right"]].set_visible(False)
 temp_plot.legend()
 
 # Shared x-axis label & layout 
-axes[0].set_title(f'Burst Schedule', fontsize=14, fontweight='bold')
+axes[0].set_title(f'', fontsize=14, fontweight='bold')
 axes[-1].set_xlabel("Time (s)")
 fig.tight_layout()
 plt.savefig("fig.png", dpi=150)

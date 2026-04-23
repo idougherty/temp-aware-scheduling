@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import csv
 import argparse
 import numpy as np
 import pandas as pd
@@ -15,17 +16,9 @@ SCHEDULE = [
 ]
 
 
-SCHEDULE = [
-]
+#SCHEDULE = [
+#]
 
-length = 600
-for i in range(length//10):
-    SCHEDULE += [(i*10, i*10+5)]
-
-print(SCHEDULE)
-
-for i in range(length//2):
-    SCHEDULE += [(i*2, i*2+1)]
 
 COOLDOWN = 40  # seconds to simulate after last period
 
@@ -38,7 +31,7 @@ def build_Q_signal(t, schedule, Q):
     return 0.0
 
 
-def simulate(schedule, Q, Q_base, R_coupling, R_amb, tau1, tau2, T_amb, dt=1):
+def simulate(schedule, Q, Q_base, R_coupling, R_amb, tau1, tau2, T_amb, dt=0.1):
     t_end = max(t1 for _, t1 in schedule) + COOLDOWN
 
     # force solver to land exactly on task boundaries
@@ -62,38 +55,33 @@ def simulate(schedule, Q, Q_base, R_coupling, R_amb, tau1, tau2, T_amb, dt=1):
 
     #sol = solve_ivp(odes, (0, t_end), [T_amb, T_amb], t_eval=t_eval, method="RK45")
     T_init = 30
-    T_heatsink = 26
+    T_heatsink = 27
     sol = solve_ivp(odes, (0, t_end), [T_init, T_heatsink],
-                    t_eval=t_eval, method="RK45",
-                    max_step=dt)
+                    t_eval=t_eval, method="RK45", max_step=dt)
 
     return sol.t, sol.y[0], sol.y[1]
 
 
 def plot(t, T_cpu, T_sink, schedule, T_amb, benchmark_data):
 
-    fig, ax = plt.subplots(figsize=(12, 5))
+    fig, ax = plt.subplots(figsize=(10, 3))
     
     if benchmark_data is not None:
         df = pd.read_csv(benchmark_data)
         df["timestamp_s"] = (df["timestamp_ms"] - df["timestamp_ms"].iloc[0]) / 1000.0
         df["smooth_temp_celsius"] = df["temp_celsius"].ewm(span=10, adjust=True).mean()
-        ax.plot(df["timestamp_s"], df["smooth_temp_celsius"], label="real workload") 
+        ax.plot(df["timestamp_s"], df["smooth_temp_celsius"], label="T_cpu") 
 
     # shade active periods
     for t0, t1 in schedule:
         ax.axvspan(t0, t1, alpha=0.12, color="red", label="_nolegend_")
 
-    ax.plot(t, T_cpu,  label="T_cpu",  linewidth=2)
-    ax.plot(t, T_sink, label="T_sink (latent)", linewidth=1.5, linestyle="--")
-    ax.axhline(T_amb, color="gray", linewidth=1, linestyle=":", label=f"T_amb ({T_amb}°C)")
-
-    # annotate shaded regions once
-    ax.axvspan(0, 0, alpha=0.12, color="red", label="task active")
+    ax.plot(t, T_cpu,  label="Predicted T_cpu",  linewidth=2)
+    ax.plot(t, T_sink, label="Predicted T_sink", linewidth=1.5, linestyle="--")
 
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Temperature (°C)")
-    ax.set_title("Two-Node Thermal Model Prediction")
+    ax.set_title("Two-Node Thermal Model Prediction", fontsize=14, fontweight='bold')
     ax.legend()
     ax.grid(True, alpha=0.3)
     plt.tight_layout()
@@ -110,7 +98,17 @@ if __name__ == "__main__":
     parser.add_argument("--tau2",    type=float, required=True, help="Heat sink time constant (s)")
     parser.add_argument("--T_amb",   type=float, default=22.0,  help="Ambient temperature (C), default 22")
     parser.add_argument("--benchmark-data")
+    parser.add_argument("--schedule")
     args = parser.parse_args()
+
+
+    if args.schedule is not None:
+        with open(args.schedule) as f:
+            reader = csv.DictReader(f)
+            SCHEDULE = [
+                (float(r["request_arrival"]), float(r["request_arrival"]) + int(r["task_length"]))
+                for r in reader
+            ]
 
     t, T_cpu, T_sink = simulate(
         schedule    = SCHEDULE,

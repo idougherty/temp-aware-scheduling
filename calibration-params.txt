@@ -1,1 +1,1 @@
-Q=8.665W, Q_base=2.546W, R_coupling=1.208C/W, R_amb=1.875W, tau1=1.333s, tau2=59.410s
+--Q 4.977 --Q_base 1.191 --R_coupling 2.075 --R_amb 3.645 --tau1 1.250 --tau2 61.303 
